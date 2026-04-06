@@ -1,0 +1,1165 @@
+================================================================================
+  MERIDIAN WEALTH PARTNERS — Intelligent Advisor Assignment Platform
+  Database Schema: PostgreSQL DDL + ER Diagram + Data Dictionary + Seed Data
+  Generated: April 2026 | Source: multi_agent_demo.html
+================================================================================
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  SECTION 1: ENTITY RELATIONSHIP DIAGRAM (Mermaid)                       ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Copy the block below into any Mermaid renderer (e.g. mermaid.live) to view.
+
+erDiagram
+    regions {
+        VARCHAR(100) id PK
+        VARCHAR(100) name UK
+        TEXT description
+    }
+
+    branches {
+        VARCHAR(10) id PK
+        VARCHAR(200) name UK
+        VARCHAR(100) region_id FK
+        INTEGER advisor_count
+        INTEGER client_count
+        INTEGER avg_engagement
+        INTEGER capacity
+    }
+
+    advisors {
+        VARCHAR(10) id PK
+        VARCHAR(200) name
+        VARCHAR(4) initials
+        VARCHAR(10) branch_id FK
+        INTEGER capacity
+        INTEGER client_book_size
+        VARCHAR(30) aum
+        INTEGER retention_rate
+        INTEGER nps_score
+        VARCHAR(100) credentials
+    }
+
+    advisor_specializations {
+        BIGSERIAL id PK
+        VARCHAR(10) advisor_id FK
+        VARCHAR(100) specialization
+    }
+
+    clients {
+        VARCHAR(20) id PK
+        VARCHAR(200) name
+        client_type type
+        wealth_tier tier
+        VARCHAR(30) aum
+        VARCHAR(10) branch_id FK
+        assignment_status status
+        VARCHAR(10) assigned_advisor_id FK
+        VARCHAR(300) source
+        VARCHAR(200) acquiring_banker
+        TEXT scenario_key
+    }
+
+    users {
+        BIGSERIAL id PK
+        VARCHAR(200) name
+        VARCHAR(200) email UK
+        VARCHAR(20) employee_id
+        user_role role
+    }
+
+    assignment_runs {
+        VARCHAR(50) id PK
+        VARCHAR(20) client_id FK
+        VARCHAR(10) advisor_id FK
+        INTEGER compatibility_score
+        compliance_status compliance_status
+        INTEGER duration_ms
+        run_status status
+        VARCHAR(50) run_type
+        TIMESTAMP created_at
+        TIMESTAMP completed_at
+    }
+
+    pipeline_agents {
+        BIGSERIAL id PK
+        VARCHAR(50) run_id FK
+        VARCHAR(100) agent_name
+        VARCHAR(50) agent_version
+        TIMESTAMP started_at
+        TIMESTAMP completed_at
+        agent_status status
+    }
+
+    pipeline_logs {
+        BIGSERIAL id PK
+        VARCHAR(50) run_id FK
+        VARCHAR(50) agent
+        TIMESTAMP logged_at
+        TEXT message
+    }
+
+    pipeline_artifacts {
+        BIGSERIAL id PK
+        VARCHAR(50) run_id FK
+        VARCHAR(100) artifact_type
+        TEXT content
+        TIMESTAMP generated_at
+    }
+
+    compliance_checks {
+        BIGSERIAL id PK
+        VARCHAR(50) run_id FK
+        VARCHAR(200) rule
+        check_status status
+        TEXT detail
+    }
+
+    regional_opportunities {
+        VARCHAR(20) id PK
+        VARCHAR(20) client_id FK
+        opportunity_category category
+        opportunity_severity severity
+        INTEGER score
+        VARCHAR(10) source_branch_id FK
+        VARCHAR(10) target_branch_id FK
+        VARCHAR(10) current_advisor_id FK
+        VARCHAR(10) suggested_advisor_id FK
+        INTEGER projected_score
+        TEXT issue
+        TEXT blind_spot
+        TEXT summary
+        VARCHAR(200) revenue_impact
+        VARCHAR(200) capacity_impact
+        analysis_status analysis_status
+    }
+
+    opportunity_evidence {
+        BIGSERIAL id PK
+        VARCHAR(20) opportunity_id FK
+        VARCHAR(50) icon
+        TEXT evidence_text
+        VARCHAR(200) source
+    }
+
+    opportunity_risks {
+        BIGSERIAL id PK
+        VARCHAR(20) opportunity_id FK
+        risk_level level
+        TEXT risk_text
+    }
+
+    opportunity_factors {
+        BIGSERIAL id PK
+        VARCHAR(20) opportunity_id FK
+        VARCHAR(100) label
+        INTEGER before_score
+        INTEGER after_score
+    }
+
+    reassignment_outcomes {
+        VARCHAR(10) id PK
+        VARCHAR(200) client_name
+        wealth_tier tier
+        VARCHAR(30) aum
+        VARCHAR(200) from_advisor_name
+        VARCHAR(200) from_branch_name
+        VARCHAR(200) to_advisor_name
+        VARCHAR(200) to_branch_name
+        VARCHAR(100) category
+        DATE reassignment_date
+        INTEGER score_before
+        INTEGER score_projected
+        INTEGER score_actual
+        INTEGER revenue_before
+        INTEGER revenue_after
+        INTEGER nps_before
+        INTEGER nps_after
+        outcome_type outcome
+        TEXT root_cause
+        TEXT recommendation
+        TEXT summary
+    }
+
+    outcome_timeline {
+        BIGSERIAL id PK
+        VARCHAR(10) outcome_id FK
+        VARCHAR(50) event_date
+        TEXT event_text
+        timeline_status status
+    }
+
+    advisor_sales_plan {
+        BIGSERIAL id PK
+        VARCHAR(10) advisor_id FK
+        INTEGER nnia_plan
+        INTEGER nnia_actual
+        VARCHAR(20) nnia_unit
+        INTEGER nnda_plan
+        INTEGER nnda_actual
+        VARCHAR(20) nnda_unit
+        INTEGER ntb_plan
+        INTEGER ntb_actual
+    }
+
+    branch_performance {
+        BIGSERIAL id PK
+        VARCHAR(10) branch_id FK
+        INTEGER total_reassignments
+        INTEGER succeeded_count
+        INTEGER pre_engagement
+        INTEGER pre_nps
+        INTEGER pre_revenue
+        INTEGER pre_retention
+        INTEGER post_engagement
+        INTEGER post_nps
+        INTEGER post_revenue
+        INTEGER post_retention
+    }
+
+    %% ── Relationships ──
+    regions ||--o{ branches : "has"
+    branches ||--o{ advisors : "employs"
+    branches ||--o{ clients : "serves"
+    advisors ||--o{ advisor_specializations : "has"
+    advisors ||--o{ clients : "assigned_to"
+    advisors ||--o| advisor_sales_plan : "tracked_in"
+    clients ||--o{ assignment_runs : "initiated_by"
+    assignment_runs ||--o{ pipeline_agents : "executes"
+    assignment_runs ||--o{ pipeline_logs : "logs"
+    assignment_runs ||--o{ pipeline_artifacts : "produces"
+    assignment_runs ||--o{ compliance_checks : "checked_by"
+    regional_opportunities }o--|| clients : "about"
+    regional_opportunities }o--|| branches : "from_source"
+    regional_opportunities }o--|| branches : "to_target"
+    regional_opportunities }o--|| advisors : "current_advisor"
+    regional_opportunities }o--|| advisors : "suggested_advisor"
+    regional_opportunities ||--o{ opportunity_evidence : "supported_by"
+    regional_opportunities ||--o{ opportunity_risks : "has_risks"
+    regional_opportunities ||--o{ opportunity_factors : "measured_by"
+    reassignment_outcomes ||--o{ outcome_timeline : "has_events"
+    branches ||--o| branch_performance : "measured_by"
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  SECTION 2: DATA DICTIONARY                                             ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+--------------------------------------------------------------------------------
+  TABLE: regions
+--------------------------------------------------------------------------------
+  Column       | Type          | Nullable | Description
+  -------------|---------------|----------|------------------------------------------
+  id           | VARCHAR(100)  | NO, PK   | Region identifier (e.g. 'northeast_us')
+  name         | VARCHAR(100)  | NO, UK   | Display name (e.g. 'Northeast US')
+  description  | TEXT          | YES      | Optional region description
+
+--------------------------------------------------------------------------------
+  TABLE: branches
+--------------------------------------------------------------------------------
+  Column          | Type         | Nullable | Description
+  ----------------|--------------|----------|------------------------------------------
+  id              | VARCHAR(10)  | NO, PK   | Branch code (e.g. 'BR-101')
+  name            | VARCHAR(200) | NO, UK   | Branch display name
+  region_id       | VARCHAR(100) | NO, FK   | References regions.id
+  advisor_count   | INTEGER      | YES      | Number of advisors at this branch
+  client_count    | INTEGER      | YES      | Number of clients at this branch
+  avg_engagement  | INTEGER      | YES      | Average client engagement score (0-100)
+  capacity        | INTEGER      | YES      | Average advisor capacity utilization (0-100)
+
+--------------------------------------------------------------------------------
+  TABLE: advisors
+--------------------------------------------------------------------------------
+  Column          | Type         | Nullable | Description
+  ----------------|--------------|----------|------------------------------------------
+  id              | VARCHAR(10)  | NO, PK   | Advisor code (e.g. 'ADV-1187')
+  name            | VARCHAR(200) | NO       | Full name with credentials
+  initials        | VARCHAR(4)   | YES      | Two-letter initials for avatars
+  branch_id       | VARCHAR(10)  | NO, FK   | References branches.id
+  capacity        | INTEGER      | YES      | Current capacity utilization (0-100)
+  client_book_size| INTEGER      | YES      | Number of active clients
+  aum             | VARCHAR(30)  | YES      | Total AUM under management
+  retention_rate  | INTEGER      | YES      | Client retention percentage (0-100)
+  nps_score       | INTEGER      | YES      | Net Promoter Score (0-100)
+  credentials     | VARCHAR(100) | YES      | Professional credentials string
+
+--------------------------------------------------------------------------------
+  TABLE: advisor_specializations
+--------------------------------------------------------------------------------
+  Column         | Type          | Nullable | Description
+  ---------------|---------------|----------|------------------------------------------
+  id             | BIGSERIAL     | NO, PK   | Auto-incrementing surrogate key
+  advisor_id     | VARCHAR(10)   | NO, FK   | References advisors.id
+  specialization | VARCHAR(100)  | NO       | Specialization area (e.g. 'UHNW', 'ESG')
+
+--------------------------------------------------------------------------------
+  TABLE: clients
+--------------------------------------------------------------------------------
+  Column              | Type         | Nullable | Description
+  --------------------|--------------|----------|------------------------------------------
+  id                  | VARCHAR(20)  | NO, PK   | Client ID (e.g. 'CLT-2026-04892')
+  name                | VARCHAR(200) | NO       | Full client name
+  type                | client_type  | NO       | 'prospect' or 'acquired'
+  tier                | wealth_tier  | NO       | 'UHNW', 'HNW', or 'Affluent'
+  aum                 | VARCHAR(30)  | YES      | Total assets under management
+  branch_id           | VARCHAR(10)  | NO, FK   | Home branch, references branches.id
+  status              | assignment_status | NO   | 'unassigned','pre-assigned','ai-assigned'
+  assigned_advisor_id | VARCHAR(10)  | YES, FK  | References advisors.id
+  source              | VARCHAR(300) | YES      | How the client was sourced
+  acquiring_banker    | VARCHAR(200) | YES      | For acquired clients, the banker name
+  scenario_key        | TEXT         | YES      | Demo scenario key for pipeline runs
+
+--------------------------------------------------------------------------------
+  TABLE: users
+--------------------------------------------------------------------------------
+  Column      | Type          | Nullable | Description
+  ------------|---------------|----------|------------------------------------------
+  id          | BIGSERIAL     | NO, PK   | Auto-incrementing primary key
+  name        | VARCHAR(200)  | NO       | User display name
+  email       | VARCHAR(200)  | NO, UK   | Corporate email (login)
+  employee_id | VARCHAR(20)   | YES      | Employee code (e.g. 'EMP-1234')
+  role        | user_role     | NO       | 'branch_manager','regional_manager','head_of_sales'
+
+--------------------------------------------------------------------------------
+  TABLE: assignment_runs
+--------------------------------------------------------------------------------
+  Column              | Type              | Nullable | Description
+  --------------------|-------------------|----------|------------------------------------------
+  id                  | VARCHAR(50)       | NO, PK   | Orchestrator run ID
+  client_id           | VARCHAR(20)       | NO, FK   | References clients.id
+  advisor_id          | VARCHAR(10)       | YES, FK  | Recommended advisor, references advisors.id
+  compatibility_score | INTEGER           | YES      | AI compatibility score (0-100)
+  compliance_status   | compliance_status | YES      | Overall compliance verdict
+  duration_ms         | INTEGER           | YES      | Total pipeline duration in milliseconds
+  status              | run_status        | NO       | 'pending','running','completed','failed'
+  run_type            | VARCHAR(50)       | YES      | 'ai_assignment','cross_branch','manual'
+  created_at          | TIMESTAMP         | NO       | When the pipeline was initiated
+  completed_at        | TIMESTAMP         | YES      | When the pipeline finished
+
+--------------------------------------------------------------------------------
+  TABLE: pipeline_agents
+--------------------------------------------------------------------------------
+  Column        | Type           | Nullable | Description
+  -------------|----------------|----------|------------------------------------------
+  id           | BIGSERIAL      | NO, PK   | Auto-incrementing primary key
+  run_id       | VARCHAR(50)    | NO, FK   | References assignment_runs.id
+  agent_name   | VARCHAR(100)   | NO       | Agent name (e.g. 'Client Profiling Agent')
+  agent_version| VARCHAR(50)    | YES      | Agent version (e.g. 'v2.1')
+  started_at   | TIMESTAMP      | YES      | When this agent started executing
+  completed_at | TIMESTAMP      | YES      | When this agent completed
+  status       | agent_status   | NO       | 'waiting','running','complete','failed'
+
+--------------------------------------------------------------------------------
+  TABLE: pipeline_logs
+--------------------------------------------------------------------------------
+  Column    | Type          | Nullable | Description
+  ----------|---------------|----------|------------------------------------------
+  id        | BIGSERIAL     | NO, PK   | Auto-incrementing primary key
+  run_id    | VARCHAR(50)   | NO, FK   | References assignment_runs.id
+  agent     | VARCHAR(50)   | YES      | Agent identifier (e.g. 'PROFILING','ORCH')
+  logged_at | TIMESTAMP     | NO       | Log entry timestamp
+  message   | TEXT          | YES      | Log message content
+
+--------------------------------------------------------------------------------
+  TABLE: pipeline_artifacts
+--------------------------------------------------------------------------------
+  Column        | Type           | Nullable | Description
+  -------------|----------------|----------|------------------------------------------
+  id           | BIGSERIAL      | NO, PK   | Auto-incrementing primary key
+  run_id       | VARCHAR(50)    | NO, FK   | References assignment_runs.id
+  artifact_type| VARCHAR(100)   | NO       | Type (e.g. 'Enriched Profile','Intro Email')
+  content      | TEXT           | YES      | Full artifact content (text)
+  generated_at | TIMESTAMP      | NO       | When artifact was generated
+
+--------------------------------------------------------------------------------
+  TABLE: compliance_checks
+--------------------------------------------------------------------------------
+  Column  | Type             | Nullable | Description
+  --------|------------------|----------|------------------------------------------
+  id      | BIGSERIAL        | NO, PK   | Auto-incrementing primary key
+  run_id  | VARCHAR(50)      | NO, FK   | References assignment_runs.id
+  rule    | VARCHAR(200)     | NO       | Compliance rule name
+  status  | check_status     | NO       | 'pass','warn','info','fail'
+  detail  | TEXT             | YES      | Detailed result description
+
+--------------------------------------------------------------------------------
+  TABLE: regional_opportunities
+--------------------------------------------------------------------------------
+  Column               | Type                  | Nullable | Description
+  ---------------------|-----------------------|----------|------------------------------------------
+  id                   | VARCHAR(20)           | NO, PK   | Opportunity ID (e.g. 'CLT-2026-03102')
+  client_id            | VARCHAR(20)           | NO, FK   | References clients.id
+  category             | opportunity_category  | NO       | 'capacity','specialization','geographic','engagement'
+  severity             | opportunity_severity  | NO       | 'critical','warning','info'
+  score                | INTEGER               | YES      | Current compatibility score (0-100)
+  source_branch_id     | VARCHAR(10)           | NO, FK   | Client's current branch, references branches.id
+  target_branch_id     | VARCHAR(10)           | NO, FK   | Recommended target branch, references branches.id
+  current_advisor_id   | VARCHAR(10)           | YES, FK  | Current advisor, references advisors.id
+  suggested_advisor_id | VARCHAR(10)           | YES, FK  | Suggested advisor, references advisors.id
+  projected_score      | INTEGER               | YES      | Projected score after reassignment
+  issue                | TEXT                  | YES      | Description of the problem detected
+  blind_spot           | TEXT                  | YES      | Why branch-level view misses this
+  summary              | TEXT                  | YES      | Full analysis summary for BM review
+  revenue_impact       | VARCHAR(200)          | YES      | Revenue impact description
+  capacity_impact      | VARCHAR(200)          | YES      | Capacity impact description
+  analysis_status      | analysis_status       | NO       | 'pending','running','complete'
+
+--------------------------------------------------------------------------------
+  TABLE: opportunity_evidence
+--------------------------------------------------------------------------------
+  Column        | Type          | Nullable | Description
+  -------------|---------------|----------|------------------------------------------
+  id           | BIGSERIAL     | NO, PK   | Auto-incrementing primary key
+  opportunity_id| VARCHAR(20)   | NO, FK   | References regional_opportunities.id
+  icon         | VARCHAR(50)   | YES      | Icon type key (e.g. 'phone','chart','search')
+  evidence_text| TEXT          | YES      | Evidence description
+  source       | VARCHAR(200)  | YES      | Data source attribution
+
+--------------------------------------------------------------------------------
+  TABLE: opportunity_risks
+--------------------------------------------------------------------------------
+  Column        | Type          | Nullable | Description
+  -------------|---------------|----------|------------------------------------------
+  id           | BIGSERIAL     | NO, PK   | Auto-incrementing primary key
+  opportunity_id| VARCHAR(20)   | NO, FK   | References regional_opportunities.id
+  level        | risk_level    | NO       | 'green','amber','red'
+  text         | TEXT          | YES      | Risk description
+
+--------------------------------------------------------------------------------
+  TABLE: opportunity_factors
+--------------------------------------------------------------------------------
+  Column        | Type          | Nullable | Description
+  -------------|---------------|----------|------------------------------------------
+  id           | BIGSERIAL     | NO, PK   | Auto-incrementing primary key
+  opportunity_id| VARCHAR(20)   | NO, FK   | References regional_opportunities.id
+  label        | VARCHAR(100)  | NO       | Factor name (e.g. 'ESG / Impact Expertise')
+  before_score | INTEGER       | NO       | Current score (0-100)
+  after_score  | INTEGER       | NO       | Projected score after reassignment (0-100)
+
+--------------------------------------------------------------------------------
+  TABLE: reassignment_outcomes
+--------------------------------------------------------------------------------
+  Column              | Type          | Nullable | Description
+  --------------------|---------------|----------|------------------------------------------
+  id                  | VARCHAR(10)   | NO, PK   | Outcome ID (e.g. 'RA-001')
+  client_name         | VARCHAR(200)  | NO       | Client name
+  tier                | wealth_tier   | NO       | Client wealth tier
+  aum                 | VARCHAR(30)   | YES      | Client AUM
+  from_advisor_name   | VARCHAR(200)  | YES      | Previous advisor full name
+  from_branch_name    | VARCHAR(200)  | YES      | Previous branch name
+  to_advisor_name     | VARCHAR(200)  | YES      | New advisor full name
+  to_branch_name      | VARCHAR(200)  | YES      | New branch name
+  category            | VARCHAR(100)  | YES      | Reassignment category
+  reassignment_date   | DATE          | YES      | Date reassignment was executed
+  score_before        | INTEGER       | YES      | Engagement score before reassignment
+  score_projected     | INTEGER       | YES      | AI-projected score
+  score_actual        | INTEGER       | YES      | Actual measured score post-reassignment
+  revenue_before      | INTEGER       | YES      | Revenue before (in basis points / K)
+  revenue_after       | INTEGER       | YES      | Revenue after
+  nps_before          | INTEGER       | YES      | NPS before
+  nps_after           | INTEGER       | YES      | NPS after
+  outcome             | outcome_type  | NO       | 'success' or 'underperform'
+  root_cause          | TEXT          | YES      | Root cause analysis (for underperformers)
+  recommendation      | TEXT          | YES      | Corrective recommendation
+  summary             | TEXT          | YES      | Executive summary
+
+--------------------------------------------------------------------------------
+  TABLE: outcome_timeline
+--------------------------------------------------------------------------------
+  Column     | Type          | Nullable | Description
+  ----------|---------------|----------|------------------------------------------
+  id         | BIGSERIAL     | NO, PK   | Auto-incrementing primary key
+  outcome_id | VARCHAR(10)   | NO, FK   | References reassignment_outcomes.id
+  event_date | VARCHAR(50)   | YES      | Date string (e.g. '14 Oct 2025')
+  event_text | TEXT          | YES      | Event description
+  status     | timeline_status| NO       | 'green','amber','red'
+
+--------------------------------------------------------------------------------
+  TABLE: advisor_sales_plan
+--------------------------------------------------------------------------------
+  Column      | Type         | Nullable | Description
+  ------------|--------------|----------|------------------------------------------
+  id          | BIGSERIAL    | NO, PK   | Auto-incrementing primary key
+  advisor_id  | VARCHAR(10)  | NO, FK   | References advisors.id
+  nnia_plan   | INTEGER      | YES      | Net New Investment Assets plan
+  nnia_actual | INTEGER      | YES      | Net New Investment Assets actual
+  nnia_unit   | VARCHAR(20)  | YES      | Unit label (e.g. 'USD M')
+  nnda_plan   | INTEGER      | YES      | Net New Deposit Assets plan
+  nnda_actual | INTEGER      | YES      | Net New Deposit Assets actual
+  nnda_unit   | VARCHAR(20)  | YES      | Unit label
+  ntb_plan    | INTEGER      | YES      | New To Bank plan (count)
+  ntb_actual  | INTEGER      | YES      | New To Bank actual (count)
+
+--------------------------------------------------------------------------------
+  TABLE: branch_performance
+--------------------------------------------------------------------------------
+  Column           | Type       | Nullable | Description
+  -----------------|------------|----------|------------------------------------------
+  id               | BIGSERIAL  | NO, PK   | Auto-incrementing primary key
+  branch_id        | VARCHAR(10)| NO, FK   | References branches.id
+  total_reassignments| INTEGER  | YES      | Total reassignments executed
+  succeeded_count  | INTEGER    | YES      | Number that succeeded
+  pre_engagement   | INTEGER    | YES      | Avg engagement before reassignments
+  pre_nps          | INTEGER    | YES      | Avg NPS before reassignments
+  pre_revenue      | INTEGER    | YES      | Avg revenue before reassignments
+  pre_retention    | INTEGER    | YES      | Avg retention before reassignments
+  post_engagement  | INTEGER    | YES      | Avg engagement after reassignments
+  post_nps         | INTEGER    | YES      | Avg NPS after reassignments
+  post_revenue     | INTEGER    | YES      | Avg revenue after reassignments
+  post_retention   | INTEGER    | YES      | Avg retention after reassignments
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  SECTION 3: POSTGRESQL DDL                                               ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+-- ============================================================================
+-- Custom ENUM types
+-- ============================================================================
+
+CREATE TYPE user_role AS ENUM (
+    'branch_manager',
+    'regional_manager',
+    'head_of_sales'
+);
+
+CREATE TYPE client_type AS ENUM ('prospect', 'acquired');
+
+CREATE TYPE wealth_tier AS ENUM ('UHNW', 'HNW', 'Affluent');
+
+CREATE TYPE assignment_status AS ENUM (
+    'unassigned',
+    'pre-assigned',
+    'ai-assigned'
+);
+
+CREATE TYPE compliance_status AS ENUM (
+    'CLEARED',
+    'CLEARED_WITH_CONDITIONS',
+    'ESCALATED',
+    'REJECTED'
+);
+
+CREATE TYPE run_status AS ENUM ('pending', 'running', 'completed', 'failed');
+
+CREATE TYPE agent_status AS ENUM ('waiting', 'running', 'complete', 'failed');
+
+CREATE TYPE check_status AS ENUM ('pass', 'warn', 'info', 'fail');
+
+CREATE TYPE opportunity_category AS ENUM (
+    'capacity',
+    'specialization',
+    'geographic',
+    'engagement'
+);
+
+CREATE TYPE opportunity_severity AS ENUM ('critical', 'warning', 'info');
+
+CREATE TYPE analysis_status AS ENUM ('pending', 'running', 'complete');
+
+CREATE TYPE risk_level AS ENUM ('green', 'amber', 'red');
+
+CREATE TYPE outcome_type AS ENUM ('success', 'underperform');
+
+CREATE TYPE timeline_status AS ENUM ('green', 'amber', 'red');
+
+
+-- ============================================================================
+-- Core Entities
+-- ============================================================================
+
+CREATE TABLE regions (
+    id          VARCHAR(100)  NOT NULL PRIMARY KEY,
+    name        VARCHAR(100)  NOT NULL UNIQUE,
+    description TEXT
+);
+
+COMMENT ON TABLE regions IS 'Geographic regions grouping branches for regional management';
+
+CREATE TABLE branches (
+    id              VARCHAR(10)   NOT NULL PRIMARY KEY,
+    name            VARCHAR(200)  NOT NULL UNIQUE,
+    region_id       VARCHAR(100)  NOT NULL REFERENCES regions(id),
+    advisor_count   INTEGER,
+    client_count    INTEGER,
+    avg_engagement  INTEGER       CHECK (avg_engagement BETWEEN 0 AND 100),
+    capacity        INTEGER       CHECK (capacity BETWEEN 0 AND 100)
+);
+
+COMMENT ON TABLE branches IS 'Physical branch offices where advisors operate';
+
+CREATE INDEX idx_branches_region ON branches(region_id);
+
+CREATE TABLE advisors (
+    id               VARCHAR(10)   NOT NULL PRIMARY KEY,
+    name             VARCHAR(200)  NOT NULL,
+    initials         VARCHAR(4),
+    branch_id        VARCHAR(10)   NOT NULL REFERENCES branches(id),
+    capacity         INTEGER       CHECK (capacity BETWEEN 0 AND 100),
+    client_book_size INTEGER,
+    aum              VARCHAR(30),
+    retention_rate   INTEGER       CHECK (retention_rate BETWEEN 0 AND 100),
+    nps_score        INTEGER       CHECK (nps_score BETWEEN 0 AND 100),
+    credentials      VARCHAR(100)
+);
+
+COMMENT ON TABLE advisors IS 'Wealth advisors with specializations, capacity, and performance metrics';
+
+CREATE INDEX idx_advisors_branch ON advisors(branch_id);
+CREATE INDEX idx_advisors_capacity ON advisors(capacity);
+CREATE INDEX idx_advisors_nps ON advisors(nps_score);
+
+CREATE TABLE advisor_specializations (
+    id              BIGSERIAL     NOT NULL PRIMARY KEY,
+    advisor_id      VARCHAR(10)   NOT NULL REFERENCES advisors(id) ON DELETE CASCADE,
+    specialization  VARCHAR(100)  NOT NULL,
+    UNIQUE (advisor_id, specialization)
+);
+
+COMMENT ON TABLE advisor_specializations IS 'Many-to-many relationship between advisors and their specialization areas';
+
+CREATE INDEX idx_adv_specs_specialization ON advisor_specializations(specialization);
+
+CREATE TABLE clients (
+    id                  VARCHAR(20)       NOT NULL PRIMARY KEY,
+    name                VARCHAR(200)      NOT NULL,
+    type                client_type       NOT NULL,
+    tier                wealth_tier       NOT NULL,
+    aum                 VARCHAR(30),
+    branch_id           VARCHAR(10)       NOT NULL REFERENCES branches(id),
+    status              assignment_status NOT NULL DEFAULT 'unassigned',
+    assigned_advisor_id VARCHAR(10)       REFERENCES advisors(id) ON DELETE SET NULL,
+    source              VARCHAR(300),
+    acquiring_banker    VARCHAR(200),
+    scenario_key        TEXT
+);
+
+COMMENT ON TABLE clients IS 'Wealth management clients (prospects and acquired) awaiting or having completed advisor assignment';
+
+CREATE INDEX idx_clients_branch ON clients(branch_id);
+CREATE INDEX idx_clients_tier ON clients(tier);
+CREATE INDEX idx_clients_status ON clients(status);
+CREATE INDEX idx_clients_assigned_advisor ON clients(assigned_advisor_id);
+
+CREATE TABLE users (
+    id          BIGSERIAL     NOT NULL PRIMARY KEY,
+    name        VARCHAR(200)  NOT NULL,
+    email       VARCHAR(200)  NOT NULL UNIQUE,
+    employee_id VARCHAR(20),
+    role        user_role     NOT NULL
+);
+
+COMMENT ON TABLE users IS 'Platform users who log in via SSO with role-based access (BM, RM, HoS)';
+
+
+-- ============================================================================
+-- Pipeline / Assignment Tables
+-- ============================================================================
+
+CREATE TABLE assignment_runs (
+    id                  VARCHAR(50)       NOT NULL PRIMARY KEY,
+    client_id           VARCHAR(20)       NOT NULL REFERENCES clients(id),
+    advisor_id          VARCHAR(10)       REFERENCES advisors(id) ON DELETE SET NULL,
+    compatibility_score INTEGER           CHECK (compatibility_score BETWEEN 0 AND 100),
+    compliance_status   compliance_status,
+    duration_ms         INTEGER,
+    status              run_status        NOT NULL DEFAULT 'pending',
+    run_type            VARCHAR(50),
+    created_at          TIMESTAMP         NOT NULL DEFAULT NOW(),
+    completed_at        TIMESTAMP
+);
+
+COMMENT ON TABLE assignment_runs IS 'Orchestrated AI pipeline runs for client-advisor matching';
+
+CREATE INDEX idx_runs_client ON assignment_runs(client_id);
+CREATE INDEX idx_runs_advisor ON assignment_runs(advisor_id);
+CREATE INDEX idx_runs_status ON assignment_runs(status);
+
+CREATE TABLE pipeline_agents (
+    id             BIGSERIAL     NOT NULL PRIMARY KEY,
+    run_id         VARCHAR(50)   NOT NULL REFERENCES assignment_runs(id) ON DELETE CASCADE,
+    agent_name     VARCHAR(100)  NOT NULL,
+    agent_version  VARCHAR(50),
+    started_at     TIMESTAMP,
+    completed_at   TIMESTAMP,
+    status         agent_status   NOT NULL DEFAULT 'waiting'
+);
+
+COMMENT ON TABLE pipeline_agents IS 'Individual agent executions within an assignment pipeline run (Profiling, Advisor Fit, Compliance, Activation)';
+
+CREATE INDEX idx_pipeline_agents_run ON pipeline_agents(run_id);
+
+CREATE TABLE pipeline_logs (
+    id        BIGSERIAL     NOT NULL PRIMARY KEY,
+    run_id    VARCHAR(50)   NOT NULL REFERENCES assignment_runs(id) ON DELETE CASCADE,
+    agent     VARCHAR(50),
+    logged_at TIMESTAMP     NOT NULL DEFAULT NOW(),
+    message   TEXT
+);
+
+COMMENT ON TABLE pipeline_logs IS 'Detailed timestamped log entries from the orchestrator and individual agents';
+
+CREATE INDEX idx_pipeline_logs_run ON pipeline_logs(run_id);
+
+CREATE TABLE pipeline_artifacts (
+    id             BIGSERIAL     NOT NULL PRIMARY KEY,
+    run_id         VARCHAR(50)   NOT NULL REFERENCES assignment_runs(id) ON DELETE CASCADE,
+    artifact_type  VARCHAR(100)  NOT NULL,
+    content        TEXT,
+    generated_at   TIMESTAMP     NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE pipeline_artifacts IS 'Artifacts generated by the pipeline: enriched profiles, emails, briefings, CRM payloads, calendar invites';
+
+CREATE INDEX idx_artifacts_run ON pipeline_artifacts(run_id);
+
+CREATE TABLE compliance_checks (
+    id      BIGSERIAL     NOT NULL PRIMARY KEY,
+    run_id  VARCHAR(50)   NOT NULL REFERENCES assignment_runs(id) ON DELETE CASCADE,
+    rule    VARCHAR(200)  NOT NULL,
+    status  check_status  NOT NULL,
+    detail  TEXT
+);
+
+COMMENT ON TABLE compliance_checks IS 'Individual regulatory compliance checks executed during the compliance agent stage';
+
+CREATE INDEX idx_compliance_run ON compliance_checks(run_id);
+
+
+-- ============================================================================
+-- Regional Intelligence Tables
+-- ============================================================================
+
+CREATE TABLE regional_opportunities (
+    id                   VARCHAR(20)           NOT NULL PRIMARY KEY,
+    client_id            VARCHAR(20)           NOT NULL REFERENCES clients(id),
+    category             opportunity_category  NOT NULL,
+    severity             opportunity_severity  NOT NULL,
+    score                INTEGER               CHECK (score BETWEEN 0 AND 100),
+    source_branch_id     VARCHAR(10)           NOT NULL REFERENCES branches(id),
+    target_branch_id     VARCHAR(10)           NOT NULL REFERENCES branches(id),
+    current_advisor_id   VARCHAR(10)           REFERENCES advisors(id) ON DELETE SET NULL,
+    suggested_advisor_id VARCHAR(10)           REFERENCES advisors(id) ON DELETE SET NULL,
+    projected_score      INTEGER               CHECK (projected_score BETWEEN 0 AND 100),
+    issue                TEXT,
+    blind_spot           TEXT,
+    summary              TEXT,
+    revenue_impact       VARCHAR(200),
+    capacity_impact      VARCHAR(200),
+    analysis_status      analysis_status       NOT NULL DEFAULT 'pending'
+);
+
+COMMENT ON TABLE regional_opportunities IS 'Cross-branch optimization opportunities detected by the regional intelligence agent. Invisible at branch level.';
+
+CREATE INDEX idx_opportunities_client ON regional_opportunities(client_id);
+CREATE INDEX idx_opportunities_source ON regional_opportunities(source_branch_id);
+CREATE INDEX idx_opportunities_target ON regional_opportunities(target_branch_id);
+CREATE INDEX idx_opportunities_severity ON regional_opportunities(severity);
+CREATE INDEX idx_opportunities_category ON regional_opportunities(category);
+
+CREATE TABLE opportunity_evidence (
+    id              BIGSERIAL    NOT NULL PRIMARY KEY,
+    opportunity_id  VARCHAR(20)  NOT NULL REFERENCES regional_opportunities(id) ON DELETE CASCADE,
+    icon            VARCHAR(50),
+    evidence_text   TEXT,
+    source          VARCHAR(200)
+);
+
+COMMENT ON TABLE opportunity_evidence IS 'Evidence items supporting a regional opportunity (call transcripts, portfolio data, CRM records)';
+
+CREATE INDEX idx_evidence_opportunity ON opportunity_evidence(opportunity_id);
+
+CREATE TABLE opportunity_risks (
+    id              BIGSERIAL    NOT NULL PRIMARY KEY,
+    opportunity_id  VARCHAR(20)  NOT NULL REFERENCES regional_opportunities(id) ON DELETE CASCADE,
+    level           risk_level   NOT NULL,
+    text            TEXT
+);
+
+COMMENT ON TABLE opportunity_risks IS 'Risk assessments for a proposed reassignment (compliance, capacity, relationship risks)';
+
+CREATE INDEX idx_risks_opportunity ON opportunity_risks(opportunity_id);
+
+CREATE TABLE opportunity_factors (
+    id              BIGSERIAL     NOT NULL PRIMARY KEY,
+    opportunity_id  VARCHAR(20)   NOT NULL REFERENCES regional_opportunities(id) ON DELETE CASCADE,
+    label           VARCHAR(100)  NOT NULL,
+    before_score    INTEGER       NOT NULL CHECK (before_score BETWEEN 0 AND 100),
+    after_score     INTEGER       NOT NULL CHECK (after_score BETWEEN 0 AND 100)
+);
+
+COMMENT ON TABLE opportunity_factors IS 'Before/after compatibility factor scores comparing current vs. recommended advisor assignment';
+
+CREATE INDEX idx_factors_opportunity ON opportunity_factors(opportunity_id);
+
+
+-- ============================================================================
+-- Outcome Tracking Tables
+-- ============================================================================
+
+CREATE TABLE reassignment_outcomes (
+    id                  VARCHAR(10)  NOT NULL PRIMARY KEY,
+    client_name         VARCHAR(200) NOT NULL,
+    tier                wealth_tier  NOT NULL,
+    aum                 VARCHAR(30),
+    from_advisor_name   VARCHAR(200),
+    from_branch_name    VARCHAR(200),
+    to_advisor_name     VARCHAR(200),
+    to_branch_name      VARCHAR(200),
+    category            VARCHAR(100),
+    reassignment_date   DATE,
+    score_before        INTEGER      CHECK (score_before BETWEEN 0 AND 100),
+    score_projected     INTEGER      CHECK (score_projected BETWEEN 0 AND 100),
+    score_actual        INTEGER      CHECK (score_actual BETWEEN 0 AND 100),
+    revenue_before      INTEGER,
+    revenue_after       INTEGER,
+    nps_before          INTEGER      CHECK (nps_before BETWEEN 0 AND 100),
+    nps_after           INTEGER      CHECK (nps_after BETWEEN 0 AND 100),
+    outcome             outcome_type NOT NULL,
+    root_cause          TEXT,
+    recommendation      TEXT,
+    summary             TEXT
+);
+
+COMMENT ON TABLE reassignment_outcomes IS 'Historical reassignment results tracked by Head of Sales for outcome analysis and model improvement';
+
+CREATE INDEX idx_outcomes_type ON reassignment_outcomes(outcome);
+
+CREATE TABLE outcome_timeline (
+    id          BIGSERIAL       NOT NULL PRIMARY KEY,
+    outcome_id  VARCHAR(10)     NOT NULL REFERENCES reassignment_outcomes(id) ON DELETE CASCADE,
+    event_date  VARCHAR(50),
+    event_text  TEXT,
+    status      timeline_status NOT NULL DEFAULT 'green'
+);
+
+COMMENT ON TABLE outcome_timeline IS 'Chronological events tracking the progress of each reassignment post-execution';
+
+CREATE INDEX idx_timeline_outcome ON outcome_timeline(outcome_id);
+
+
+-- ============================================================================
+-- Sales Plan & Performance Tables
+-- ============================================================================
+
+CREATE TABLE advisor_sales_plan (
+    id          BIGSERIAL    NOT NULL PRIMARY KEY,
+    advisor_id  VARCHAR(10)  NOT NULL REFERENCES advisors(id) ON DELETE CASCADE,
+    nnia_plan   INTEGER,
+    nnia_actual INTEGER,
+    nnia_unit   VARCHAR(20)  DEFAULT 'USD M',
+    nnda_plan   INTEGER,
+    nnda_actual INTEGER,
+    nnda_unit   VARCHAR(20)  DEFAULT 'USD M',
+    ntb_plan    INTEGER,
+    ntb_actual  INTEGER,
+    UNIQUE (advisor_id)
+);
+
+COMMENT ON TABLE advisor_sales_plan IS 'Advisor-level sales plan vs actual tracking: NNIA, NNDA, NTB metrics';
+
+CREATE INDEX idx_sales_plan_advisor ON advisor_sales_plan(advisor_id);
+
+CREATE TABLE branch_performance (
+    id                   BIGSERIAL    NOT NULL PRIMARY KEY,
+    branch_id            VARCHAR(10)  NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+    total_reassignments  INTEGER,
+    succeeded_count      INTEGER,
+    pre_engagement       INTEGER,
+    pre_nps              INTEGER,
+    pre_revenue          INTEGER,
+    pre_retention        INTEGER,
+    post_engagement      INTEGER,
+    post_nps             INTEGER,
+    post_revenue         INTEGER,
+    post_retention       INTEGER,
+    UNIQUE (branch_id)
+);
+
+COMMENT ON TABLE branch_performance IS 'Aggregate pre/post-reassignment metrics at the branch level for regional and executive reporting';
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  SECTION 4: SEED DATA — INSERT STATEMENTS                                ║
+║  Extracted from embedded JavaScript in multi_agent_demo.html             ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+-- ============================================================================
+-- 4.1 Regions
+-- ============================================================================
+
+INSERT INTO regions (id, name) VALUES
+    ('northeast_us',  'Northeast US'),
+    ('west_us',       'West US'),
+    ('south_us',      'South US'),
+    ('southeast_us',  'Southeast US'),
+    ('mountain_us',   'Mountain US'),
+    ('midwest_us',    'Midwest US');
+
+-- ============================================================================
+-- 4.2 Branches (core 5)
+-- ============================================================================
+
+INSERT INTO branches (id, name, region_id, advisor_count, client_count, avg_engagement, capacity) VALUES
+    ('BR-101', 'New York — Park Avenue',        'northeast_us',  4,  89, 84, 78),
+    ('BR-102', 'San Francisco — Market St',      'west_us',       3,  62, 79, 76),
+    ('BR-103', 'Houston — Galleria',             'south_us',      3,  71, 81, 74),
+    ('BR-104', 'Miami — Brickell',               'southeast_us',  3,  54, 86, 68),
+    ('BR-105', 'Dallas — Uptown',                'south_us',      2,  38, 76, 72);
+
+-- ============================================================================
+-- 4.3 Advisors (core 12) + Specializations
+-- ============================================================================
+
+INSERT INTO advisors (id, name, initials, branch_id, capacity, client_book_size, aum, retention_rate, nps_score, credentials) VALUES
+    ('ADV-1187', 'Priya Mehta, CFA, CFP',                'PM', 'BR-101', 88, 34, 'USD 660M',    96, 82, 'CFA, CFP'),
+    ('ADV-0834', 'David Tan, CFA',                       'DT', 'BR-101', 72, 28, 'USD 460M',    91, 78, 'CFA'),
+    ('ADV-1410', 'Rachel Ng, CFA',                       'RN', 'BR-101', 62, 18, 'USD 305M',    90, 83, 'CFA'),
+    ('ADV-0923', 'Kevin Park, CFA, CAIA',                'KP', 'BR-102', 84, 31, 'USD 720M',    89, 88, 'CFA, CAIA'),
+    ('ADV-0756', 'Jennifer Wu, CFP',                     'JW', 'BR-102', 68, 24, 'USD 480M',    92, 80, 'CFP'),
+    ('ADV-1045', 'Michael Roberts, CFA, CFP',             'MR', 'BR-102', 76, 29, 'USD 950M',    95, 85, 'CFA, CFP'),
+    ('ADV-0671', 'Robert Caldwell, CFA, CFP, TEP',        'RC', 'BR-103', 82, 26, 'USD 1420M',   97, 91, 'CFA, CFP, TEP'),
+    ('ADV-1198', 'Maria Santos, CFP, CAP',               'MS', 'BR-103', 70, 22, 'USD 680M',    93, 86, 'CFP, CAP'),
+    ('ADV-1302', 'Sarah Lim, CFP, TEP',                  'SL', 'BR-104', 65, 22, 'USD 920M',    98, 89, 'CFP, TEP'),
+    ('ADV-0892', 'Daniel Choi, CFP',                     'DC', 'BR-104', 58, 16, 'USD 120M',    88, 87, 'CFP'),
+    ('ADV-1560', 'Lisa Tran, CFP, TEP',                  'LT', 'BR-104', 71, 20, 'USD 145M',    96, 90, 'CFP, TEP'),
+    ('ADV-0445', 'James Richardson III, CFA',             'JR', 'BR-105', 74, 19, 'USD 2100M',   94, 84, 'CFA');
+
+INSERT INTO advisor_specializations (advisor_id, specialization) VALUES
+    ('ADV-1187', 'UHNW'), ('ADV-1187', 'ESG'), ('ADV-1187', 'Founders'),
+    ('ADV-0834', 'HNW'), ('ADV-0834', 'Tax Structuring'),
+    ('ADV-1410', 'HNW'), ('ADV-1410', 'Multi-state Planning'), ('ADV-1410', 'Real Estate'),
+    ('ADV-0923', 'Tech Execs'), ('ADV-0923', '10b5-1'), ('ADV-0923', 'Crypto'),
+    ('ADV-0756', 'Tax Planning'), ('ADV-0756', 'Trusts'),
+    ('ADV-1045', 'UHNW'), ('ADV-1045', 'Estate Planning'),
+    ('ADV-0671', 'Energy'), ('ADV-0671', 'Estates'), ('ADV-0671', 'Multigenerational'),
+    ('ADV-1198', 'Philanthropy'), ('ADV-1198', 'Family Office'), ('ADV-1198', 'Hispanic Markets'),
+    ('ADV-1302', 'Family Office'), ('ADV-1302', 'Philanthropy'),
+    ('ADV-0892', 'Tech'), ('ADV-0892', 'Crypto'), ('ADV-0892', 'Angel Investing'),
+    ('ADV-1560', 'Family Governance'), ('ADV-1560', 'Estate'), ('ADV-1560', 'Philanthropy'),
+    ('ADV-0445', 'UHNW'), ('ADV-0445', 'Oil & Gas'), ('ADV-0445', 'Institutional');
+
+-- ============================================================================
+-- 4.4 Clients (core 8)
+-- ============================================================================
+
+INSERT INTO clients (id, name, type, tier, aum, branch_id, status, assigned_advisor_id, source, acquiring_banker, scenario_key) VALUES
+    ('CLT-2026-04892', 'Dr. Mei-Lin Chen',            'prospect',  'UHNW',     'USD 35.0M', 'BR-101', 'unassigned',    NULL,      'Internal referral — PB Head (New York)',               NULL,     'chen'),
+    ('CLT-2026-05201', 'David Lim Wei',               'acquired',  'HNW',      'USD 9.5M',  'BR-101', 'pre-assigned',  'ADV-0834','Acquired from JPMorgan Private Bank',                'David Tan, CFA',          NULL),
+    ('CLT-2026-05134', 'Marcus Thompson',             'prospect',  'HNW',      'USD 28.5M', 'BR-102', 'unassigned',    NULL,      'External referral — YC alumni',                      NULL,     'thompson'),
+    ('CLT-2026-05287', 'Elena Vasquez-Crawford',      'prospect',  'UHNW',     'USD 62.0M', 'BR-103', 'unassigned',    NULL,      'Internal referral — Houston PB Div.',                 NULL,     'vasquez'),
+    ('CLT-2026-05310', 'Raymond Koh',                 'acquired',  'Affluent',  'USD 3.3M',  'BR-101', 'pre-assigned',  'ADV-1410','Referral from existing client',                     'Rachel Ng, CFA',         NULL),
+    ('CLT-2026-05402', 'James & Patricia Okonkwo',    'acquired',  'HNW',      'USD 18.2M', 'BR-102', 'pre-assigned',  'ADV-1045','Acquired from Morgan Stanley',                       'Michael Roberts, CFA, CFP', NULL),
+    ('CLT-2026-05455', 'Sophia Trevino',              'acquired',  'Affluent',  'USD 3.8M',  'BR-103', 'pre-assigned',  'ADV-1198','Walk-in prospect converted',                        'Maria Santos, CFP, CAP',  NULL),
+    ('CLT-2026-05490', 'Andrew & Linda Chang',        'prospect',  'HNW',      'USD 11.0M', 'BR-104', 'unassigned',    NULL,      'External referral — family network',                 NULL,     NULL);
+
+-- ============================================================================
+-- 4.5 Regional Opportunities (4) + Evidence + Risks + Factors
+-- ============================================================================
+
+INSERT INTO regional_opportunities (id, client_id, category, severity, score, source_branch_id, target_branch_id, current_advisor_id, suggested_advisor_id, projected_score, issue, blind_spot, summary, revenue_impact, capacity_impact, analysis_status) VALUES
+('CLT-2026-03102', 'CLT-2026-04892', 'specialization', 'critical', 48,
+    'BR-101', 'BR-101', 'ADV-0834', 'ADV-1187', 88,
+    'ESG mandate ignored for 5 months — expertise exists in same branch but Branch Manager hasn''t detected the gap',
+    'David Tan''s overall NPS (78) is within New York branch norms, masking that Ravi''s individual NPS dropped from 82 to 31 after his mandate shift. The branch-level dashboard doesn''t surface individual client drift when the advisor''s aggregate is acceptable.',
+    'URGENT. Client at 78% attrition risk with competitor contact detected. ESG expertise gap persisted for 5 months. Priya Mehta''s ESG certification is an exact fit. Same-branch transfer.',
+    '+USD 70K/yr (retention save: USD 13.8M AUM at risk)', 'Priya Mehta: 88% → 91% (conditional)', 'pending'),
+
+('CLT-2026-02340', 'CLT-2026-04892', 'geographic', 'critical', 38,
+    'BR-105', 'BR-103', 'ADV-0445', 'ADV-0671', 84,
+    'Client relocated Dallas→Houston 6 months ago — Dallas BM can''t see Houston advisor capacity, and Houston BM doesn''t know this client exists',
+    'Margaret''s address updated to Houston in Sep 2025, but she remains on the Dallas branch book. Dallas sees declining meeting frequency but attributes it to client preference. Houston BM has no visibility.',
+    'Cross-branch transfer strongly recommended. Neither branch manager can see the full picture. Robert Caldwell is an exceptional match: Houston-based, TEP-certified, relationship-driven, and has capacity.',
+    '+USD 24K/yr (engagement recovery) + attrition prevention', 'James Richardson: 74% → 71% | Robert Caldwell: 82% → 84%', 'pending'),
+
+('CLT-2026-01887', 'CLT-2026-04892', 'capacity', 'warning', 61,
+    'BR-101', 'BR-104', 'ADV-1187', 'ADV-1302', 91,
+    'New York branch at 88% advisor capacity while Miami sits at 62% — UHNW family office client better served by Miami specialist with capacity',
+    'New York BM sees Priya performing well and has no reason to move clients. Regional capacity analysis reveals 88% vs 62% imbalance. Chen Wei''s family governance needs align more closely with Sarah Lim.',
+    'Cross-branch rebalancing recommended. Triple benefit: better match, capacity relief for New York, utilization improvement for Miami.',
+    '+USD 36K/yr (service depth improvement)', 'Priya Mehta: 88% → 82% (relief) | Sarah Lim: 65% → 72%', 'pending'),
+
+('CLT-2026-02891', 'CLT-2026-04892', 'engagement', 'warning', 42,
+    'BR-102', 'BR-102', 'ADV-0756', 'ADV-0923', 86,
+    'Crypto portfolio (38% AUM) completely unmanaged — SF Branch Manager sees adequate overall NPS but regional benchmark comparison reveals outlier',
+    'Jennifer Wu''s aggregate NPS is 80 — acceptable by SF branch standards. Regional comparison reveals SF''s crypto-holding clients score 34 avg engagement vs. 87 for similar clients in Miami.',
+    'Same-branch reassignment recommended. SF branch has 6 crypto-heavy clients but only 1 CAIA-certified advisor. Recommend addressing Thomas Wright immediately and flagging broader certification-routing gap.',
+    '+USD 62K/yr across affected clients', 'Kevin Park: 84% → 87%', 'pending');
+
+-- Evidence for Opportunity 1 (Ravi Subramaniam — Specialization)
+INSERT INTO opportunity_evidence (opportunity_id, icon, evidence_text, source) VALUES
+('CLT-2026-03102', 'phone',   'Call transcript (5 Mar): "I''ve told David three times I want to move to ESG. He keeps suggesting the same conventional funds. I''m ready to move firms."', 'CRM · call-log-20260305'),
+('CLT-2026-03102', 'chart',   'Portfolio drift: Client requested 60% ESG allocation in Oct 2025. Current ESG allocation: 12%. Five months with minimal progress.', 'Portfolio Analytics Engine'),
+('CLT-2026-03102', 'search',  'Attrition risk model: 78% probability of departure within 90 days. Competitor outreach detected — Goldman Sachs ESG team contacted client on 28 Feb.', 'Predictive Retention Model'),
+('CLT-2026-03102', 'comment', 'Priya Mehta holds CFA ESG certification (2025). Manages 8 ESG-mandated portfolios with 94% allocation accuracy. Same branch — zero transition friction.', 'Advisor Capability Matrix');
+
+-- Evidence for Opportunity 2 (Margaret Whitfield — Geographic)
+INSERT INTO opportunity_evidence (opportunity_id, icon, evidence_text, source) VALUES
+('CLT-2026-02340', 'phone',   'Call transcript (20 Feb): "I moved to Houston six months ago and I''ve only seen James once. I need someone I can sit down with regularly."', 'CRM · call-log-20260220'),
+('CLT-2026-02340', 'chart',   'Meeting frequency: 1 in-person meeting in 6 months (client preference: monthly). 3 meetings cancelled due to 4-hour travel distance.', 'CRM Meeting Tracker'),
+('CLT-2026-02340', 'search',  'Address change detected Sep 2025 but no branch transfer initiated. Houston branch (BR-103) has 74% avg capacity.', 'Regional Address Correlation Engine'),
+('CLT-2026-02340', 'comment', 'Robert Caldwell (Houston): TEP-certified, 18yr tenure, manages 4 clients with similar estate complexity. Currently at 82% capacity.', 'Advisor Capability Matrix');
+
+-- Evidence for Opportunity 3 (Chen Wei — Capacity)
+INSERT INTO opportunity_evidence (opportunity_id, icon, evidence_text, source) VALUES
+('CLT-2026-01887', 'chart',   'Regional capacity heatmap: New York branch avg 88% vs Miami avg 62%. Priya Mehta specifically at 88%.', 'Regional Capacity Monitor'),
+('CLT-2026-01887', 'phone',   'Review meeting (10 Mar): Chen Wei asked about family governance charter. Priya noted: "That''s outside my core." Not her area of depth.', 'CRM · call-log-20260310'),
+('CLT-2026-01887', 'search',  'Sarah Lim (Miami): Highest NPS in region (89). TEP-certified. Manages 3 family governance structures. At 65% capacity.', 'Advisor Capability Matrix'),
+('CLT-2026-01887', 'comment', 'Chen family has Miami business interests and travels to Miami quarterly. Co-location creates natural touchpoints.', 'Client Travel & Business Profile');
+
+-- Evidence for Opportunity 4 (Thomas Wright — Engagement)
+INSERT INTO opportunity_evidence (opportunity_id, icon, evidence_text, source) VALUES
+('CLT-2026-02891', 'phone',      'Call transcript (14 Feb): Client asked about DeFi yield strategies. Advisor responded: "I''d need to research that." Three rebalancing windows missed.', 'CRM · call-log-20260214'),
+('CLT-2026-02891', 'chart',      'Regional benchmark: SF crypto-client engagement avg 34/100 vs HK crypto-client avg 87/100. SF has CAIA-certified advisor (Kevin Park) who isn''t being routed crypto clients.', 'Regional Benchmark Engine'),
+('CLT-2026-02891', 'clipboard',  'NPS survey (Jan 2026): Score 3/10. Verbatim: "I feel like I''m teaching my advisor instead of the other way around."', 'Client Feedback System'),
+('CLT-2026-02891', 'search',     'Certification gap analysis: 6 SF clients hold >20% crypto. Only Kevin Park has CAIA/crypto credentials. Jennifer Wu serves 3 of these 6.', 'Regional Certification Mapper');
+
+-- Risks for all opportunities
+INSERT INTO opportunity_risks (opportunity_id, level, text) VALUES
+('CLT-2026-03102', 'amber', 'Priya Mehta at 88% capacity. Approved with 30-day hold on new client assignments.'),
+('CLT-2026-03102', 'green', 'Same branch (New York) — no cross-branch coordination required.'),
+('CLT-2026-03102', 'amber', 'David Tan may perceive this as performance criticism. Frame as mandate-driven reallocation.'),
+('CLT-2026-03102', 'green', 'SEC suitability requirements met for ESG mandate restructuring.'),
+('CLT-2026-02340', 'amber', 'Cross-branch transfer requires sign-off from both Dallas BM and Houston BM. Revenue reallocation between branches.'),
+('CLT-2026-02340', 'green', 'Robert Caldwell at 82% capacity — well within threshold.'),
+('CLT-2026-02340', 'green', 'No conflict of interest or compliance barriers.'),
+('CLT-2026-02340', 'amber', 'Margaret''s estate plan references Texas community property law — needs fresh review with Houston-based counsel.'),
+('CLT-2026-01887', 'amber', 'Cross-border client transfer (NY→Miami) requires coordination between both branch managers.'),
+('CLT-2026-01887', 'green', 'Sarah Lim at 65% capacity — significant headroom for UHNW engagement.'),
+('CLT-2026-01887', 'amber', 'Client has 3-year relationship with Priya. Transition must be positioned as enhancement, not replacement.'),
+('CLT-2026-01887', 'green', 'Chen family''s existing Miami business ties make geographic transition natural.'),
+('CLT-2026-02891', 'green', 'Same branch transfer — no cross-branch coordination required.'),
+('CLT-2026-02891', 'green', 'Kevin Park at 84% capacity. Can absorb within threshold.'),
+('CLT-2026-02891', 'amber', 'Jennifer Wu serves 3 crypto-heavy clients total — systemic issue. Recommend broader review.'),
+('CLT-2026-02891', 'green', 'No compliance conflicts or regulatory barriers.');
+
+-- Factors for all opportunities
+INSERT INTO opportunity_factors (opportunity_id, label, before_score, after_score) VALUES
+('CLT-2026-03102', 'ESG / Impact Expertise',       15, 96),
+('CLT-2026-03102', 'Client Mandate Alignment',     22, 92),
+('CLT-2026-03102', 'Portfolio Construction',       75, 88),
+('CLT-2026-03102', 'Proactive Communication',      52, 90),
+('CLT-2026-03102', 'Attrition Risk Mitigation',    22, 85),
+('CLT-2026-02340', 'Geographic Proximity',         12, 96),
+('CLT-2026-02340', 'In-Person Meeting Access',     18, 94),
+('CLT-2026-02340', 'Estate & Trust Expertise',     72, 98),
+('CLT-2026-02340', 'Energy Sector Knowledge',      65, 95),
+('CLT-2026-02340', 'Relationship Continuity',     68, 82),
+('CLT-2026-01887', 'Family Office Expertise',      68, 96),
+('CLT-2026-01887', 'Philanthropy & Governance',    55, 94),
+('CLT-2026-01887', 'Multigenerational Planning',   62, 92),
+('CLT-2026-01887', 'Capacity Headroom',           12, 35),
+('CLT-2026-01887', 'Cultural Competency',          40, 95),
+('CLT-2026-02891', 'Crypto & Digital Assets',      8,  94),
+('CLT-2026-02891', 'Active Portfolio Mgmt',        22, 88),
+('CLT-2026-02891', 'Tech Client Affinity',         55, 92),
+('CLT-2026-02891', 'Proactive Communication',      48, 85),
+('CLT-2026-02891', 'Client Retention Risk',        35, 85);
+
+-- ============================================================================
+-- 4.6 Reassignment Outcomes (5) + Timeline
+-- ============================================================================
+
+INSERT INTO reassignment_outcomes (id, client_name, tier, aum, from_advisor_name, from_branch_name, to_advisor_name, to_branch_name, category, reassignment_date, score_before, score_projected, score_actual, revenue_before, revenue_after, nps_before, nps_after, outcome, root_cause, recommendation, summary) VALUES
+('RA-001', 'Liam Henderson',           'HNW',     'USD 9.1M',  'Jennifer Wu, CFP',             'San Francisco', 'Kevin Park, CFA, CAIA',     'San Francisco', 'Specialization',  '2025-10-14', 38, 82, 89,  86, 112, 32, 88, 'success',     NULL, NULL, 'Exceeded projection by +7 points. Crypto expertise gap was the primary driver. Client now one of Kevin Park''s highest-engagement relationships. Generated 1 referral.'),
+('RA-002', 'Nadia Al-Rashid',          'UHNW',    'USD 21.1M', 'David Tan, CFA',              'New York',     'Priya Mehta, CFA, CFP',     'New York',     'ESG Mandate',    '2025-11-08', 44, 86, 91, 142, 198, 28, 92, 'success',     NULL, NULL, 'Exceeded projection by +5 points. ESG mandate fully addressed within 30 days. Client increased AUM by USD 3.1M post-reassignment. Attrition risk eliminated.'),
+('RA-003', 'James & Carol Pearson',    'Affluent', 'USD 4.2M',  'James Richardson III, CFA',    'Dallas',       'Robert Caldwell, CFA, CFP, TEP', 'Houston',   'Geographic',     '2025-09-22', 52, 80, 84,  38,  52, 48, 86, 'success',     NULL, NULL, 'Exceeded projection by +4 points. Geographic proximity was transformative — went from 1 meeting in 6 months to monthly cadence. Cross-branch coordination model validated.'),
+('RA-004', 'Haruto & Yuki Tanaka',     'HNW',     'USD 14.2M', 'Michael Roberts, CFA, CFP',   'San Francisco', 'Kevin Park, CFA, CAIA',     'San Francisco', 'Communication Style', '2025-12-05', 51, 79, 64, 108, 118, 52, 62, 'underperform', 'The original analysis correctly identified communication style friction but underweighted the Tanakas'' estate planning complexity (multi-state trust). Kevin Park''s strengths are in tech/crypto — he lacks multi-state estate depth. Single-factor optimization was insufficient.', 'Add estate planning specialist (Sarah Lim, TEP) as secondary advisor for trust structuring. Kevin remains primary for investments and communication.', 'Below projection by -15 points. Communication improved (+10 NPS) but new gap emerged in multi-state estate planning. Multi-dimensional matching needed.'),
+('RA-005', 'Siti Rahman',              'HNW',     'USD 8.7M',  'Rachel Ng, CFA',              'New York',     'David Tan, CFA',             'New York',     'Capacity Rebalance', '2025-11-20', 68, 76, 58,  72,  64, 70, 52, 'underperform', 'Capacity-driven reassignment disrupted a functioning relationship. Siti''s engagement with Rachel was 68/100 — adequate. The model prioritised freeing Rachel''s capacity without sufficiently weighting relationship depth and Rachel''s unique multi-state real estate expertise.', 'Return Siti to Rachel Ng. Rachel''s capacity improved to 78%. Flag this case type: capacity-driven reassignments where current engagement is >65 should require a higher bar for transfer (projected score must exceed current by >15 points).', 'Below projection by -18 points. Capacity-driven reassignment disrupted a functioning relationship. The model needs a higher threshold for moving clients whose current engagement is adequate (>65).');
+
+-- Timeline for RA-001 (Liam Henderson — success)
+INSERT INTO outcome_timeline (outcome_id, event_date, event_text, status) VALUES
+('RA-001', '14 Oct 2025', 'Reassignment executed. Joint introduction call completed.', 'green'),
+('RA-001', '28 Oct 2025', 'First solo meeting with Kevin Park. Client: "Finally someone who gets crypto."', 'green'),
+('RA-001', '15 Nov 2025', '10b5-1 plan drafted for concentrated tech position. NPS jumped to 72.', 'green'),
+('RA-001', '20 Dec 2025', 'Crypto rebalancing complete. DeFi yield strategy implemented. NPS: 85.', 'green'),
+('RA-001', '15 Feb 2026', '90-day review: Engagement 89/100 (projected 82). Revenue +30%. Client referred a colleague.', 'green');
+
+-- Timeline for RA-002 (Nadia Al-Rashid — success)
+INSERT INTO outcome_timeline (outcome_id, event_date, event_text, status) VALUES
+('RA-002', '8 Nov 2025',  'Reassignment executed. Priya''s ESG onboarding process initiated.', 'green'),
+('RA-002', '22 Nov 2025', 'ESG portfolio restructuring plan presented. Client approved immediately.', 'green'),
+('RA-002', '10 Dec 2025', '60% ESG allocation achieved (was 8%). Healthcare impact fund selected.', 'green'),
+('RA-002', '15 Jan 2026', 'Client joined Meridian''s ESG Advisory Circle. NPS: 90.', 'green'),
+('RA-002', '1 Mar 2026',  '90-day review: Engagement 91/100. AUM increased by USD 3.1M (new deposit).', 'green');
+
+-- Timeline for RA-003 (James & Carol Pearson — success)
+INSERT INTO outcome_timeline (outcome_id, event_date, event_text, status) VALUES
+('RA-003', '22 Sep 2025', 'Cross-branch transfer executed. Dallas → Houston. Both BMs signed off.', 'green'),
+('RA-003', '5 Oct 2025',  'First in-person meeting at Houston office. Estate review initiated.', 'green'),
+('RA-003', '18 Nov 2025', 'Monthly cadence established. TX community property estate plan updated.', 'green'),
+('RA-003', '10 Jan 2026', 'Client: "Having someone local makes all the difference." NPS: 82.', 'green'),
+('RA-003', '1 Mar 2026',  '6-month review: Engagement 84/100. Meeting cadence 100% maintained.', 'green');
+
+-- Timeline for RA-004 (Haruto & Yuki Tanaka — underperform)
+INSERT INTO outcome_timeline (outcome_id, event_date, event_text, status) VALUES
+('RA-004', '5 Dec 2025',  'Reassignment executed. Kevin introduced via video call.', 'green'),
+('RA-004', '20 Dec 2025', 'First portfolio review. Communication pace improved. NPS: 60.', 'green'),
+('RA-004', '15 Jan 2026', 'Client raised concern: Kevin lacks deep estate planning knowledge for their multi-state trust structure.', 'amber'),
+('RA-004', '5 Feb 2026',  'Estate structuring question escalated to external counsel. 2-week delay frustrated client.', 'red'),
+('RA-004', '1 Mar 2026',  '90-day review: Engagement 64/100. Communication improved but estate gap emerged.', 'amber');
+
+-- Timeline for RA-005 (Siti Rahman — underperform)
+INSERT INTO outcome_timeline (outcome_id, event_date, event_text, status) VALUES
+('RA-005', '20 Nov 2025', 'Reassignment executed as part of capacity rebalancing (Rachel at 92%).', 'green'),
+('RA-005', '8 Dec 2025',  'First meeting. Client seemed reserved — strong rapport with Rachel being missed.', 'amber'),
+('RA-005', '5 Jan 2026',  'Client: "Rachel understood my family situation. David is very professional but it feels transactional."', 'red'),
+('RA-005', '20 Jan 2026', 'Out-of-state real estate transaction mishandled — David unfamiliar with Florida property structures.', 'red'),
+('RA-005', '1 Mar 2026',  '90-day review: Engagement 58/100. Client requested to return to Rachel.', 'red');
+
+-- ============================================================================
+-- 4.7 Branch Performance (5)
+-- ============================================================================
+
+INSERT INTO branch_performance (branch_id, total_reassignments, succeeded_count, pre_engagement, pre_nps, pre_revenue, pre_retention, post_engagement, post_nps, post_revenue, post_retention) VALUES
+('BR-101', 4, 3, 76, 72, 148, 86, 86, 84, 178, 93),
+('BR-102', 5, 3, 71, 68, 132, 82, 80, 78, 158, 89),
+('BR-103', 3, 3, 74, 70, 140, 84, 85, 82, 168, 92),
+('BR-104', 2, 2, 80, 78, 156, 90, 88, 86, 182, 95),
+('BR-105', 2, 1, 68, 65, 124, 80, 74, 71, 138, 85);
+
+-- ============================================================================
+-- 4.8 Advisor Sales Plan (12)
+-- ============================================================================
+
+INSERT INTO advisor_sales_plan (advisor_id, nnia_plan, nnia_actual, nnia_unit, nnda_plan, nnda_actual, nnda_unit, ntb_plan, ntb_actual) VALUES
+('ADV-1187', 120, 142, 'USD M',  45, 48, 'USD M',  8, 10),
+('ADV-0834',  95,  62, 'USD M',  35, 22, 'USD M',  6,  3),
+('ADV-1410',  65,  48, 'USD M',  25, 20, 'USD M',  5,  3),
+('ADV-0923', 110, 128, 'USD M',  40, 44, 'USD M',  7,  9),
+('ADV-0756',  80,  51, 'USD M',  30, 18, 'USD M',  5,  2),
+('ADV-1045', 140, 132, 'USD M',  50, 46, 'USD M',  6,  5),
+('ADV-0671', 200, 218, 'USD M',  70, 74, 'USD M',  8,  9),
+('ADV-1198', 100,  78, 'USD M',  35, 28, 'USD M',  6,  4),
+('ADV-1302', 180, 195, 'USD M',  60, 58, 'USD M',  5,  6),
+('ADV-0892',  90,  62, 'USD M',  30, 19, 'USD M',  6,  3),
+('ADV-1560', 150, 148, 'USD M',  55, 52, 'USD M',  5,  5),
+('ADV-0445', 250, 185, 'USD M',  80, 52, 'USD M',  4,  2);
+
+-- ============================================================================
+-- 4.9 Sample Assignment Run (Scenario: Dr. Mei-Lin Chen)
+-- ============================================================================
+
+INSERT INTO assignment_runs (id, client_id, advisor_id, compatibility_score, compliance_status, duration_ms, status, run_type, created_at, completed_at) VALUES
+('orch-run-20260325-094512-a7f3', 'CLT-2026-04892', 'ADV-1187', 94, 'CLEARED_WITH_CONDITIONS', 23050, 'completed', 'ai_assignment', '2026-03-25 09:45:12', '2026-03-25 09:45:35');
+
+INSERT INTO pipeline_agents (run_id, agent_name, agent_version, started_at, completed_at, status) VALUES
+('orch-run-20260325-094512-a7f3', 'Client Profiling Agent',              'v2.1', '2026-03-25 09:45:12.300', '2026-03-25 09:45:18.950', 'complete'),
+('orch-run-20260325-094512-a7f3', 'Advisor Fit Agent',                  'v1.8', '2026-03-25 09:45:19.250', '2026-03-25 09:45:24.050', 'complete'),
+('orch-run-20260325-094512-a7f3', 'Constraint & Compliance Agent',       'v3.0', '2026-03-25 09:45:24.350', '2026-03-25 09:45:28.050', 'complete'),
+('orch-run-20260325-094512-a7f3', 'Activation Agent',                   'v2.4', '2026-03-25 09:45:28.350', '2026-03-25 09:45:34.950', 'complete');
+
+INSERT INTO compliance_checks (run_id, rule, status, detail) VALUES
+('orch-run-20260325-094512-a7f3', 'SEC Registration & Licensing',   'pass', 'Advisor Priya Mehta holds Series 65/66 current. SEC-compliant for UHNW advisory.'),
+('orch-run-20260325-094512-a7f3', 'Suitability Assessment',        'pass', 'Client risk profile (Moderate-Aggressive) within advisor''s approved suitability band.'),
+('orch-run-20260325-094512-a7f3', 'Capacity Threshold',            'warn', 'Advisor at 88% capacity (firm threshold: 90%). Approved with condition: no new clients for 30 days.'),
+('orch-run-20260325-094512-a7f3', 'Conflict of Interest',         'pass', 'No personal holdings overlap. No prior relationship with BioGenix Therapeutics.'),
+('orch-run-20260325-094512-a7f3', 'Cross-border Restriction',     'pass', 'US tax resident. Advisor is New York-based. State registration current.'),
+('orch-run-20260325-094512-a7f3', 'Anti-Money Laundering',        'pass', 'Source of wealth verified (BioGenix exit proceeds documented). EDD completed. PEP negative.'),
+('orch-run-20260325-094512-a7f3', 'Mandatory Review Flag',        'info', 'AUM > USD 15M triggers Tier-1 review at 90 days. Auto-scheduled for 2026-06-23.');
+
+
+-- ============================================================================
+-- END OF SCHEMA
+-- ============================================================================
